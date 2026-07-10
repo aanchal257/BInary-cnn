@@ -3,18 +3,18 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# -----------------------------------------
-# Page Configuration
-# -----------------------------------------
+# -----------------------------------
+# Page Settings
+# -----------------------------------
 st.set_page_config(
-    page_title="AI Eye Gender Classification",
+    page_title="AI Eye Gender Classifier",
     page_icon="👁️",
     layout="wide"
 )
 
-# -----------------------------------------
+# -----------------------------------
 # Load Model
-# -----------------------------------------
+# -----------------------------------
 @st.cache_resource
 def load_model():
     return tf.keras.models.load_model("model.keras")
@@ -23,166 +23,264 @@ model = load_model()
 
 IMG_SIZE = 128
 
-# -----------------------------------------
-# Custom CSS
-# -----------------------------------------
+
+# -----------------------------------
+# Styling
+# -----------------------------------
 st.markdown("""
 <style>
 
-.stApp{
-    background:#edf4ff;
+.stApp {
+    background: #F1F5F9;
 }
 
-/* Hide Streamlit Menu */
-#MainMenu {visibility:hidden;}
-footer {visibility:hidden;}
-header {visibility:hidden;}
+/* Remove default header */
+header {
+    visibility: hidden;
+}
 
-/* Hero Banner */
+/* Main Banner */
 
-.hero{
-    padding:35px;
-    border-radius:18px;
-    background:linear-gradient(90deg,#2563EB,#4F46E5,#7C3AED);
-    color:white;
+.banner {
+    background: linear-gradient(135deg,#2563EB,#7C3AED);
+    padding: 35px;
+    border-radius: 25px;
     text-align:center;
+    color:white;
     margin-bottom:30px;
-    box-shadow:0px 8px 20px rgba(0,0,0,0.2);
+    box-shadow:0px 10px 30px rgba(37,99,235,0.25);
 }
 
-.hero h1{
-    font-size:44px;
-    margin-bottom:8px;
+.banner h1 {
+    font-size:45px;
+    margin-bottom:10px;
 }
 
-.hero p{
-    font-size:18px;
-    opacity:0.9;
+.banner p {
+    font-size:20px;
 }
+
 
 /* Cards */
 
-.card{
+.card {
+
     background:white;
     padding:25px;
-    border-radius:18px;
-    box-shadow:0px 4px 18px rgba(0,0,0,0.12);
+    border-radius:22px;
+    box-shadow:0px 8px 25px rgba(0,0,0,0.08);
+    height:100%;
 }
 
-/* Upload Box */
 
-[data-testid="stFileUploader"]{
+/* Upload */
+
+[data-testid="stFileUploader"] {
+
     background:white;
     border-radius:15px;
     padding:15px;
-    border:2px dashed #4F46E5;
+    border:2px dashed #2563EB;
+
 }
 
-/* Success Box */
 
-div[data-testid="stSuccess"]{
-    border-radius:12px;
-}
+/* Prediction badge */
 
-/* Metric */
+.badge {
 
-[data-testid="metric-container"]{
-    background:#F8FAFC;
+    font-size:32px;
+    font-weight:bold;
+    padding:15px;
     border-radius:15px;
-    padding:12px;
-    border:1px solid #E2E8F0;
+    text-align:center;
+    background:#EFF6FF;
+    color:#1D4ED8;
+    margin:20px 0;
+
 }
 
-/* Progress */
 
-.stProgress > div > div > div{
-    background:#2563EB;
+/* Confidence */
+
+.confidence {
+
+    background:#F8FAFC;
+    padding:15px;
+    border-radius:15px;
+    text-align:center;
+
+}
+
+
+.small-text{
+
+    color:#64748B;
+    font-size:16px;
+
 }
 
 </style>
+
 """, unsafe_allow_html=True)
 
-# -----------------------------------------
-# Banner
-# -----------------------------------------
+
+
+# -----------------------------------
+# Header
+# -----------------------------------
 
 st.markdown("""
-<div class="hero">
+<div class="banner">
+
 <h1>👁️ AI Eye Gender Classification</h1>
-<p>Deep Learning Powered Prediction System</p>
+
+<p>Deep Learning based image prediction system</p>
+
 </div>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------
-# Upload
-# -----------------------------------------
+
+
+# -----------------------------------
+# Upload Image
+# -----------------------------------
 
 uploaded_file = st.file_uploader(
-    "📂 Upload an Eye Image",
+    "Upload an eye image",
     type=["jpg","jpeg","png"]
 )
 
-# -----------------------------------------
-# Prediction
-# -----------------------------------------
+
 
 if uploaded_file:
 
     image = Image.open(uploaded_file).convert("RGB")
 
-    col1, col2 = st.columns([1,1])
 
-    with col1:
+    left,right = st.columns(2)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
 
-        st.subheader("📸 Uploaded Image")
+    with left:
 
-        st.image(image, use_container_width=True)
+        st.markdown(
+        '<div class="card">',
+        unsafe_allow_html=True
+        )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.subheader("📷 Input Image")
 
-    img = image.resize((IMG_SIZE,IMG_SIZE))
+        st.image(
+            image,
+            use_container_width=True
+        )
+
+        st.markdown(
+        '</div>',
+        unsafe_allow_html=True
+        )
+
+
+
+    # preprocessing
+
+    img = image.resize(
+        (IMG_SIZE,IMG_SIZE)
+    )
+
     img = np.array(img)/255.0
-    img = np.expand_dims(img,0)
 
-    with st.spinner("🔍 AI is analyzing the image..."):
+    img = np.expand_dims(
+        img,
+        axis=0
+    )
 
-        prediction = model.predict(img, verbose=0)
+
+    with st.spinner("AI is analyzing..."):
+
+        prediction = model.predict(
+            img,
+            verbose=0
+        )
+
 
     confidence = float(prediction[0][0])
 
-    # Change labels if your classes are reversed
+
+
+    # Change labels if your dataset mapping is opposite
+
     if confidence >= 0.5:
-        label = "👨 Male"
+
+        result = "👨 Male"
         score = confidence
+
     else:
-        label = "👩 Female"
+
+        result = "👩 Female"
         score = 1-confidence
 
-    with col2:
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
 
-        st.subheader("🤖 Prediction")
+    with right:
 
-        st.success(label)
 
-        st.metric(
-            "Confidence Score",
-            f"{score*100:.2f}%"
+        st.markdown(
+        '<div class="card">',
+        unsafe_allow_html=True
         )
 
-        st.progress(score)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.subheader("🤖 AI Prediction")
 
-    st.balloons()
 
-# -----------------------------------------
-# Bottom Tip
-# -----------------------------------------
+        st.markdown(
+        f"""
+        <div class="badge">
+        {result}
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
 
-st.markdown("<br>", unsafe_allow_html=True)
 
-st.info("💡 For best results, upload a clear, high-quality eye image.")
+        st.markdown(
+        f"""
+        <div class="confidence">
+
+        <h3>Confidence</h3>
+
+        <h1>{score*100:.2f}%</h1>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
+
+
+        st.progress(
+            score
+        )
+
+
+        st.markdown(
+        '<p class="small-text">Prediction generated by CNN model</p>',
+        unsafe_allow_html=True
+        )
+
+
+        st.markdown(
+        '</div>',
+        unsafe_allow_html=True
+        )
+
+
+    st.success("Prediction completed successfully 🎯")
+
+
+
+else:
+
+    st.info(
+        "👆 Upload an eye image to start prediction"
+    )
