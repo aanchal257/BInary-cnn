@@ -3,18 +3,47 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# ----------------------------
+# ------------------------------------
 # Page Configuration
-# ----------------------------
+# ------------------------------------
 st.set_page_config(
-    page_title="Male & Female Eye Classifier",
+    page_title="AI Eye Gender Classification",
     page_icon="👁️",
     layout="wide"
 )
 
-# ----------------------------
+# ------------------------------------
+# Custom CSS
+# ------------------------------------
+st.markdown("""
+<style>
+.main-title{
+    text-align:center;
+    font-size:48px;
+    font-weight:bold;
+    color:#2E86DE;
+}
+
+.sub-title{
+    text-align:center;
+    font-size:20px;
+    color:gray;
+    margin-bottom:25px;
+}
+
+.prediction-card{
+    background:#F4F6F7;
+    padding:25px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0px 0px 10px rgba(0,0,0,0.15);
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ------------------------------------
 # Load Model
-# ----------------------------
+# ------------------------------------
 @st.cache_resource
 def load_model():
     return tf.keras.models.load_model("model.keras")
@@ -23,113 +52,73 @@ model = load_model()
 
 IMG_SIZE = 128
 
-# ----------------------------
-# Sidebar
-# ----------------------------
-st.sidebar.title("📌 About Project")
-
-st.sidebar.info(
-"""
-This application uses a **Convolutional Neural Network (CNN)** to classify
-an uploaded eye image as **Male** or **Female**.
-
-### Tech Stack
-- Python
-- TensorFlow / Keras
-- CNN
-- Streamlit
-- NumPy
-- Pillow
-
-### Input
-Upload an eye image in JPG, JPEG, or PNG format.
-"""
-)
-
-# ----------------------------
-# Title
-# ----------------------------
-st.title("👁️ Male & Female Eye Classification using CNN")
+# ------------------------------------
+# Header
+# ------------------------------------
+st.markdown('<p class="main-title">👁️ AI Eye Gender Classification</p>', unsafe_allow_html=True)
 
 st.markdown(
-"""
-Upload an eye image below and let the trained CNN model predict
-whether it belongs to a **Male** or **Female**.
-"""
-)
+'<p class="sub-title">Upload an eye image and let the AI predict whether it belongs to a Male or Female.</p>',
+unsafe_allow_html=True)
 
-# ----------------------------
-# File Upload
-# ----------------------------
+st.divider()
+
+# ------------------------------------
+# Upload
+# ------------------------------------
 uploaded_file = st.file_uploader(
-    "📂 Upload Eye Image",
-    type=["jpg", "jpeg", "png"]
+    "📂 Upload an Eye Image",
+    type=["jpg","jpeg","png"]
 )
 
-# ----------------------------
-# Prediction
-# ----------------------------
-if uploaded_file is not None:
+if uploaded_file:
 
     image = Image.open(uploaded_file).convert("RGB")
 
-    col1, col2 = st.columns(2)
+    col1,col2 = st.columns([1,1])
 
     with col1:
-        st.subheader("Uploaded Image")
-        st.image(image, use_container_width=True)
+        st.image(image, caption="Uploaded Image", use_container_width=True)
 
-    image_resized = image.resize((IMG_SIZE, IMG_SIZE))
-    img_array = np.array(image_resized) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    img=image.resize((IMG_SIZE,IMG_SIZE))
+    img=np.array(img)/255.0
+    img=np.expand_dims(img,0)
 
-    with st.spinner("🔍 Analyzing Image..."):
-        prediction = model.predict(img_array, verbose=0)
+    with st.spinner("Analyzing Image..."):
+        pred=model.predict(img,verbose=0)
 
-    confidence = float(prediction[0][0])
+    confidence=float(pred[0][0])
 
-    # -------------------------------------------------
-    # IMPORTANT
-    # Change this if your classes are reversed.
-    # -------------------------------------------------
-
-    if confidence >= 0.5:
-        predicted_class = "👨 Male"
-        final_confidence = confidence
+    if confidence>0.5:
+        label="👨 Male"
+        score=confidence
     else:
-        predicted_class = "👩 Female"
-        final_confidence = 1 - confidence
+        label="👩 Female"
+        score=1-confidence
 
     with col2:
 
-        st.subheader("Prediction Result")
+        st.markdown('<div class="prediction-card">',unsafe_allow_html=True)
 
-        st.success(predicted_class)
+        st.markdown("## ✅ Prediction")
 
-        st.metric(
-            label="Confidence",
-            value=f"{final_confidence*100:.2f}%"
-        )
+        st.success(label)
 
-        st.progress(int(final_confidence*100))
+        st.metric("Confidence",f"{score*100:.2f}%")
 
-# ----------------------------
-# Footer
-# ----------------------------
-st.markdown("---")
+        st.progress(int(score*100))
 
-st.markdown(
-"""
-### 📖 Workflow
+        st.markdown("</div>",unsafe_allow_html=True)
 
-1. Upload an eye image.
-2. Image is resized to **128×128**.
-3. Pixel values are normalized.
-4. CNN extracts important eye features.
-5. Model predicts **Male** or **Female**.
-6. Confidence score is displayed.
+    st.balloons()
 
----
-Made with ❤️ using **TensorFlow** and **Streamlit**
-"""
-)
+st.divider()
+
+with st.expander("📖 How to Use"):
+    st.write("""
+1. Upload a clear eye image.
+2. Wait a few seconds.
+3. View the AI prediction and confidence score.
+""")
+
+st.caption("Developed using Deep Learning & Streamlit")
